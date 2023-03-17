@@ -2,6 +2,7 @@
 # locations available per the British Gliding association website
 from time import strftime
 import requests, bs4
+from urllib.parse import urlparse, parse_qs
 import pandas as pd
 from datetime import datetime
 
@@ -38,10 +39,34 @@ for tag in glidingClubTags:
         email = contactDetails[1]['href']
         website = contactDetails[2]['href'] if len(contactDetails) == 3 else "none"
         
+        parsed_url = urlparse(google_maps_location)
+
+        # extract the coordinates from the google location url
+        if parsed_url.query:  # URL has query string
+            query_dict = parse_qs(parsed_url.query)
+
+            if '//' in query_dict:
+                start_loc = query_dict['//'][0].split("'")[1].split(',')
+                end_loc = parsed_url.path.split('@')[1].split(',')[0:2]
+
+            else:
+                print("Invalid Google Maps link format!")
+                exit()
+        else:  # URL does not have query string
+            start_loc = parsed_url.path.split("//")[1].split('/')[0].split(',')
+            end_loc = parsed_url.path.split('@')[1].split(',')[0:2]
+
+        start_lat, start_long = start_loc
+        end_lat, end_long = end_loc
+
         output_data.append({
             "Club Name": club_name,
             "Address": club_physical_address,
             "Google Maps Location": google_maps_location,
+            "Start latitude": start_lat[1:],
+            "Start longitude": start_long[:-1],
+            "End latitude": end_lat,
+            "End longitude": end_long,
             "Email": email,
             "Website": website
         })
